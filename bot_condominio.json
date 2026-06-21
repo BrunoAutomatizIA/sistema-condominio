@@ -642,7 +642,7 @@
             },
             {
               "name": "text",
-              "value": "={{ '🏢 *Portaria Digital*\\n\\nOlá, *' + $json.moradorNome + '*! 👋\\nAp. ' + $json.moradorApto + ' - Bloco ' + $json.moradorBloco + '\\n\\nComo posso ajudar?\\n\\n1️⃣  📦 Minhas Encomendas\\n2️⃣  🚗 Autorizar Visitantes\\n3️⃣  🔧 Solicitar Serviços\\n4️⃣  📅 Fazer Reserva\\n5️⃣  ⚠️ Registrar Ocorrências\\n\\n_Digite o número da opção desejada_' }}"
+              "value": "={{ '🏢 *Condomínio Digital*\\n\\nOlá, *' + $json.moradorNome + '*! 👋\\nAp. ' + $json.moradorApto + ' - Bloco ' + $json.moradorBloco + '\\n\\nComo posso ajudar?\\n\\n1️⃣  📦 Minhas Encomendas\\n2️⃣  🚗 Autorizar Visitantes\\n3️⃣  🔧 Solicitar Serviços\\n4️⃣  📅 Fazer Reserva\\n5️⃣  ⚠️ Registrar Ocorrências\\n\\n_Digite o número da opção desejada_' }}"
             }
           ]
         },

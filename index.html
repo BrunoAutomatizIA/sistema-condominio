@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Condozap · Dashboard de Ocorrências</title>
+<title>Condomínio Digital · Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -1499,7 +1499,7 @@
     <div class="sidebar-logo">
       <div class="sidebar-logo-icon"><svg class="icon" aria-hidden="true"><use href="#icon-building-skyscraper"/></svg></div>
       <div>
-        <div class="sidebar-logo-text">Condozap</div>
+        <div class="sidebar-logo-text">Condomínio Digital</div>
         <div class="sidebar-logo-sub">SISTEMA DE GESTÃO</div>
       </div>
     </div>
@@ -3521,8 +3521,8 @@
       if(digits.length <= 11) digits = '55' + digits;
       var dataHora = fmtDataBr(reserva.data) + (reserva.horario ? ' às ' + reserva.horario : '');
       var text = status === 'confirmada'
-        ? '✅ *Sua reserva foi confirmada!*\n\n📅 *' + reserva.area + '*\n🗓 ' + dataHora + '\n\n_Portaria Digital_'
-        : '❌ *Sua reserva foi cancelada.*\n\n📅 *' + reserva.area + '*\n🗓 ' + dataHora + '\n\nEm caso de dúvidas, fale com a administração.\n\n_Portaria Digital_';
+        ? '✅ *Sua reserva foi confirmada!*\n\n📅 *' + reserva.area + '*\n🗓 ' + dataHora + '\n\n_Condomínio Digital_'
+        : '❌ *Sua reserva foi cancelada.*\n\n📅 *' + reserva.area + '*\n🗓 ' + dataHora + '\n\nEm caso de dúvidas, fale com a administração.\n\n_Condomínio Digital_';
       fetch(N8N_NOTIF_URL + '?number=' + encodeURIComponent(digits) + '&text=' + encodeURIComponent(text)).catch(function(){});
     }
 
@@ -3811,13 +3811,13 @@
         return '✅ *Sua reserva foi confirmada!*\n\n' +
           '📅 *' + r.area + '*\n' +
           '🗓 ' + dataHora + '\n\n' +
-          '_Portaria Digital_';
+          '_Condomínio Digital_';
       } else {
         return '❌ *Sua reserva foi cancelada.*\n\n' +
           '📅 *' + r.area + '*\n' +
           '🗓 ' + dataHora + '\n\n' +
           'Em caso de dúvidas, fale com a administração.\n\n' +
-          '_Portaria Digital_';
+          '_Condomínio Digital_';
       }
     }
 

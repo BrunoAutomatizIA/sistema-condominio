@@ -1,4 +1,4 @@
-# Condozap — Bot de Portaria para WhatsApp
+# Condomínio Digital — Bot de Portaria para WhatsApp
 
 Produto da **Automatiz.ia** que automatiza a portaria de condomínios via WhatsApp. Composto por três artefatos:
 
