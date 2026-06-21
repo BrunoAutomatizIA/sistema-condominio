@@ -862,6 +862,122 @@
   }
 
   /* ============================================
+     CALENDARIO DE RESERVAS
+     ============================================ */
+  .res-layout{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  @media (min-width: 900px){
+    .res-layout{ grid-template-columns: 380px 1fr; align-items: start; }
+  }
+  .cal-wrapper{
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    position: sticky;
+    top: 1rem;
+  }
+  .cal-header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+  .cal-title{ font-size: 13px; font-weight: 700; }
+  .cal-nav{
+    background: none;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.2rem 0.6rem;
+    cursor: pointer;
+    color: var(--text-primary);
+    font-size: 15px;
+    line-height: 1;
+  }
+  .cal-nav:hover{ background: var(--bg-surface-hover); }
+  .cal-grid{
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .cal-day-hdr{
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    padding: 0.2rem 0;
+  }
+  .cal-day{
+    min-height: 48px;
+    padding: 3px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .cal-day:hover{ background: var(--bg-surface-hover); }
+  .cal-day.cal-other-month{ opacity: 0.25; pointer-events: none; }
+  .cal-day.cal-today{ border-color: var(--brand-primary); }
+  .cal-day.cal-selected{ background: var(--status-info-bg) !important; border-color: var(--brand-primary); }
+  .cal-day-num{
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    margin-bottom: 2px;
+  }
+  .cal-day.cal-today .cal-day-num{ color: var(--brand-primary); font-weight: 800; }
+  .cal-chip{
+    font-size: 8px;
+    font-weight: 700;
+    border-radius: 3px;
+    padding: 1px 3px;
+    margin-bottom: 1px;
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+  }
+  .cal-chip.salao         { background: rgba(61,139,255,.18); color: #3D8BFF; }
+  .cal-chip.churrasqueira { background: rgba(245,166,35,.18); color: #F5A623; }
+  .cal-chip.quadra        { background: rgba(34,197,94,.18);  color: #22c55e; }
+  .cal-chip.pendente      { opacity: 0.55; }
+  .cal-legend{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .cal-legend-item{ display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text-secondary); }
+  .cal-legend-dot{ width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+  .cal-date-filter-tag{
+    font-size: 11px;
+    padding: 0.2rem 0.5rem;
+    background: var(--status-info-bg);
+    color: var(--brand-primary);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--brand-primary);
+    cursor: pointer;
+    display: none;
+  }
+  /* Form conflict alert */
+  .res-conflict{
+    font-size: 12px;
+    padding: 0.4rem 0.6rem;
+    border-radius: var(--radius-sm);
+    margin-top: 0.4rem;
+    display: none;
+  }
+  .res-conflict.danger { background: var(--status-danger-bg); color: var(--status-danger-fg); display: block; }
+  .res-conflict.warn   { background: var(--status-warning-bg); color: var(--status-warning-fg); display: block; }
+
+  /* ============================================
      TOOLBAR DE PAGINA (ex: Ocorrencias)
      ============================================ */
   .page-toolbar{
@@ -1652,6 +1768,9 @@
             <span class="form-label">Horário <span style="color:var(--status-danger-fg)">*</span></span>
             <input type="text" id="res-input-horario" placeholder="Ex: 14h às 18h">
           </label>
+          <div class="form-field form-field-full" style="margin-top:-0.25rem;">
+            <div id="res-conflict-msg" class="res-conflict"></div>
+          </div>
         </div>
         <div class="form-actions">
           <button class="btn-secondary" id="btn-cancel-reserva">Cancelar</button>
@@ -1659,8 +1778,32 @@
         </div>
       </div>
 
-      <!-- LISTA DE RESERVAS -->
-      <div id="reserva-list-container" style="display:flex;flex-direction:column;gap:0.75rem;margin-top:1rem;"></div>
+      <!-- CALENDARIO + LISTA -->
+      <div class="res-layout">
+
+        <!-- CALENDARIO -->
+        <div class="cal-wrapper">
+          <div class="cal-header">
+            <button class="cal-nav" id="cal-prev">‹</button>
+            <span class="cal-title" id="cal-month-label"></span>
+            <button class="cal-nav" id="cal-next">›</button>
+          </div>
+          <div class="cal-grid" id="cal-grid"></div>
+          <div class="cal-legend">
+            <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#3D8BFF;"></div> Salão de Festas</div>
+            <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#F5A623;"></div> Churrasqueira</div>
+            <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#22c55e;"></div> Quadra Esportiva</div>
+            <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--text-tertiary);opacity:.4;"></div> Pendente</div>
+          </div>
+          <div style="margin-top:0.6rem;text-align:center;">
+            <span id="cal-date-tag" class="cal-date-filter-tag">📅 <span id="cal-date-tag-text"></span> &times;</span>
+          </div>
+        </div>
+
+        <!-- LISTA DE RESERVAS -->
+        <div id="reserva-list-container" style="display:flex;flex-direction:column;gap:0.75rem;"></div>
+
+      </div>
 
     </div><!-- /page-reservas -->
 
@@ -3164,21 +3307,27 @@
     var reservas = [];
     var currentFilter = 'todas';
     var foundMoradorRes = null;
+    var calYear  = new Date().getFullYear();
+    var calMonth = new Date().getMonth(); // 0-indexed
+    var calDateFilter = null; // ISO date string or null
 
-    var AREAS_EMOJI = { 'Salão de Festas': '🎉', 'Churrasqueira': '🔥', 'Quadra Esportiva': '🏃' };
+    var AREAS_EMOJI  = { 'Salão de Festas': '🎉', 'Churrasqueira': '🔥', 'Quadra Esportiva': '🏃' };
+    var AREA_CSS_KEY = { 'Salão de Festas': 'salao', 'Churrasqueira': 'churrasqueira', 'Quadra Esportiva': 'quadra' };
+    var AREA_SHORT   = { 'Salão de Festas': 'Salão', 'Churrasqueira': 'Churrasco', 'Quadra Esportiva': 'Quadra' };
+    var MONTHS_PT    = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    var MONTHS_SHORT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
 
     function statusBadge(s){
-      if(s === 'pendente') return '<span class="badge badge-warning">Pendente</span>';
-      if(s === 'confirmada') return '<span class="badge badge-success">Confirmada</span>';
+      if(s === 'pendente')  return '<span class="badge badge-warning">Pendente</span>';
+      if(s === 'confirmada')return '<span class="badge badge-success">Confirmada</span>';
       if(s === 'cancelada') return '<span class="badge badge-neutral">Cancelada</span>';
       return '<span class="badge">' + s + '</span>';
     }
 
     function fmtDataBr(iso){
       if(!iso) return '';
-      var parts = iso.split('-');
-      if(parts.length < 3) return iso;
-      return parts[2] + '/' + parts[1] + '/' + parts[0];
+      var p = iso.split('-');
+      return p.length < 3 ? iso : p[2] + '/' + p[1] + '/' + p[0];
     }
 
     function renderCard(r){
@@ -3205,6 +3354,107 @@
       '</div>';
     }
 
+    function renderCalendar(){
+      var label = document.getElementById('cal-month-label');
+      var grid  = document.getElementById('cal-grid');
+      if(!grid) return;
+      if(label) label.textContent = MONTHS_PT[calMonth] + ' ' + calYear;
+
+      var DAYS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+      var html = DAYS.map(function(d){ return '<div class="cal-day-hdr">' + d + '</div>'; }).join('');
+
+      var firstDow   = new Date(calYear, calMonth, 1).getDay();
+      var daysInMon  = new Date(calYear, calMonth + 1, 0).getDate();
+      var daysInPrev = new Date(calYear, calMonth, 0).getDate();
+      var todayIso   = new Date().toISOString().slice(0, 10);
+
+      /* index reservas by date (only non-cancelled) */
+      var byDate = {};
+      reservas.forEach(function(r){
+        if(r.status === 'cancelada') return;
+        if(!byDate[r.data]) byDate[r.data] = [];
+        byDate[r.data].push(r);
+      });
+
+      /* prev-month filler */
+      for(var i = 0; i < firstDow; i++){
+        html += '<div class="cal-day cal-other-month"><div class="cal-day-num">' + (daysInPrev - firstDow + 1 + i) + '</div></div>';
+      }
+
+      /* current month */
+      for(var d = 1; d <= daysInMon; d++){
+        var iso = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+        var cls = 'cal-day';
+        if(iso === todayIso)      cls += ' cal-today';
+        if(iso === calDateFilter) cls += ' cal-selected';
+
+        var chips = '';
+        if(byDate[iso]){
+          byDate[iso].forEach(function(r){
+            var key = AREA_CSS_KEY[r.area] || 'salao';
+            var pend = r.status === 'pendente' ? ' pendente' : '';
+            chips += '<div class="cal-chip ' + key + pend + '">' + (AREA_SHORT[r.area] || r.area) + '</div>';
+          });
+        }
+        html += '<div class="' + cls + '" data-cal-date="' + iso + '"><div class="cal-day-num">' + d + '</div>' + chips + '</div>';
+      }
+
+      /* next-month filler */
+      var total = Math.ceil((firstDow + daysInMon) / 7) * 7;
+      for(var e = 1; e <= total - firstDow - daysInMon; e++){
+        html += '<div class="cal-day cal-other-month"><div class="cal-day-num">' + e + '</div></div>';
+      }
+
+      grid.innerHTML = html;
+
+      grid.querySelectorAll('[data-cal-date]').forEach(function(cell){
+        cell.addEventListener('click', function(){
+          var date = cell.getAttribute('data-cal-date');
+          calDateFilter = calDateFilter === date ? null : date;
+          updateDateTag();
+          renderList();
+          renderCalendar();
+        });
+      });
+    }
+
+    function updateDateTag(){
+      var tag  = document.getElementById('cal-date-tag');
+      var text = document.getElementById('cal-date-tag-text');
+      if(!tag) return;
+      if(calDateFilter){
+        tag.style.display = 'inline-flex';
+        if(text) text.textContent = fmtDataBr(calDateFilter);
+      } else {
+        tag.style.display = 'none';
+      }
+    }
+
+    /* validate area + date conflict in form */
+    function validateConflict(){
+      var areaEl = document.getElementById('res-input-area');
+      var dataEl = document.getElementById('res-input-data');
+      var msg    = document.getElementById('res-conflict-msg');
+      if(!msg || !areaEl || !dataEl) return;
+      var area = areaEl.value;
+      var data = dataEl.value;
+      if(!area || !data){ msg.className = 'res-conflict'; return; }
+
+      var confirmed = reservas.filter(function(r){ return r.area === area && r.data === data && r.status === 'confirmada'; });
+      var pending   = reservas.filter(function(r){ return r.area === area && r.data === data && r.status === 'pendente'; });
+
+      if(confirmed.length){
+        msg.className = 'res-conflict danger';
+        msg.textContent = '🚫 ' + area + ' já está confirmada para esta data. Escolha outra data ou área.';
+      } else if(pending.length){
+        msg.className = 'res-conflict warn';
+        msg.textContent = '⚠️ Existe uma reserva pendente de aprovação para ' + area + ' nesta data.';
+      } else {
+        msg.className = 'res-conflict';
+        msg.textContent = '';
+      }
+    }
+
     function renderDashWidget(){
       var el = document.getElementById('dash-reservas-list');
       if(!el) return;
@@ -3215,18 +3465,12 @@
         return;
       }
       el.innerHTML = upcoming.map(function(r){
-        var parts = (r.data || '').split('-');
-        var day = parts[2] || '--';
-        var months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-        var mon = parts[1] ? months[parseInt(parts[1])-1] : '';
+        var p = (r.data||'').split('-');
         var m = r.moradores || {};
-        var aptoStr = m.apartamento ? 'Ap. ' + m.apartamento : '';
         return '<div class="reservation-item">' +
-          '<div class="reservation-date"><span class="reservation-day">' + day + '</span><span class="reservation-month">' + mon + '</span></div>' +
-          '<div class="reservation-info">' +
-            '<div class="reservation-title">' + r.area + '</div>' +
-            '<div class="reservation-meta">' + (r.horario || '') + (aptoStr ? ' · ' + aptoStr : '') + '</div>' +
-          '</div>' +
+          '<div class="reservation-date"><span class="reservation-day">' + (p[2]||'--') + '</span><span class="reservation-month">' + (p[1] ? MONTHS_SHORT[parseInt(p[1])-1] : '') + '</span></div>' +
+          '<div class="reservation-info"><div class="reservation-title">' + r.area + '</div>' +
+          '<div class="reservation-meta">' + (r.horario||'') + (m.apartamento ? ' · Ap. ' + m.apartamento : '') + '</div></div>' +
           statusBadge(r.status) +
         '</div>';
       }).join('');
@@ -3235,9 +3479,14 @@
     function renderList(){
       var el = document.getElementById('reserva-list-container');
       if(!el) return;
-      var filtered = currentFilter === 'todas' ? reservas : reservas.filter(function(r){ return r.status === currentFilter; });
+      var filtered = reservas.filter(function(r){
+        if(currentFilter !== 'todas' && r.status !== currentFilter) return false;
+        if(calDateFilter && r.data !== calDateFilter) return false;
+        return true;
+      });
       if(!filtered.length){
-        el.innerHTML = '<div class="empty-state"><div class="empty-state-title">Nenhuma reserva</div></div>';
+        var msg = calDateFilter ? 'Nenhuma reserva em ' + fmtDataBr(calDateFilter) : 'Nenhuma reserva';
+        el.innerHTML = '<div class="empty-state"><div class="empty-state-title">' + msg + '</div></div>';
         return;
       }
       el.innerHTML = filtered.map(renderCard).join('');
@@ -3246,36 +3495,39 @@
     function updateStatus(id, status){
       supaApi('PATCH', '/reservas?id=eq.' + id, { status: status }).then(function(){
         reservas = reservas.map(function(r){ return r.id == id ? Object.assign({}, r, { status: status }) : r; });
-        renderList(); renderDashWidget();
+        renderList(); renderDashWidget(); renderCalendar();
         showToast(status === 'confirmada' ? 'Reserva confirmada!' : 'Reserva recusada');
       });
     }
 
     function loadFromSupabase(){
       supaApi('GET', '/reservas?select=*,moradores(nome,apartamento,bloco)&order=data.asc')
-        .then(function(rows){ reservas = rows || []; renderList(); renderDashWidget(); })
-        .catch(function(){ renderDashWidget(); });
+        .then(function(rows){ reservas = rows || []; renderList(); renderDashWidget(); renderCalendar(); })
+        .catch(function(){ renderDashWidget(); renderCalendar(); });
     }
 
-    /* form morador lookup */
     function setupForm(){
-      var aptoIn = document.getElementById('res-input-apto');
-      var blocoIn = document.getElementById('res-input-bloco');
-      var preview = document.getElementById('res-morador-preview');
-      var previewNome = document.getElementById('res-morador-nome');
-      var btnSave = document.getElementById('btn-save-reserva');
-      var btnCancel = document.getElementById('btn-cancel-reserva');
-      var btnNew = document.getElementById('btn-new-reserva');
-      var form = document.getElementById('reserva-form');
+      var aptoIn     = document.getElementById('res-input-apto');
+      var blocoIn    = document.getElementById('res-input-bloco');
+      var areaIn     = document.getElementById('res-input-area');
+      var dataIn     = document.getElementById('res-input-data');
+      var preview    = document.getElementById('res-morador-preview');
+      var previewNome= document.getElementById('res-morador-nome');
+      var btnSave    = document.getElementById('btn-save-reserva');
+      var btnCancel  = document.getElementById('btn-cancel-reserva');
+      var btnNew     = document.getElementById('btn-new-reserva');
+      var form       = document.getElementById('reserva-form');
 
       if(btnNew) btnNew.addEventListener('click', function(){
         form.hidden = false; foundMoradorRes = null;
         if(preview) preview.style.display = 'none';
+        var msg = document.getElementById('res-conflict-msg');
+        if(msg) msg.className = 'res-conflict';
       });
       if(btnCancel) btnCancel.addEventListener('click', function(){ form.hidden = true; });
 
       function doLookup(){
-        var apto = aptoIn ? aptoIn.value.trim() : '';
+        var apto  = aptoIn  ? aptoIn.value.trim()  : '';
         var bloco = blocoIn ? blocoIn.value.trim() : '';
         if(!apto || !bloco) return;
         supaApi('GET', '/moradores?apartamento=eq.' + encodeURIComponent(apto) + '&bloco=eq.' + encodeURIComponent(bloco) + '&limit=1')
@@ -3290,15 +3542,20 @@
             }
           });
       }
-      if(aptoIn) aptoIn.addEventListener('input', doLookup);
+      if(aptoIn)  aptoIn.addEventListener('input', doLookup);
       if(blocoIn) blocoIn.addEventListener('input', doLookup);
+      if(areaIn)  areaIn.addEventListener('change', validateConflict);
+      if(dataIn)  dataIn.addEventListener('change', validateConflict);
 
       if(btnSave) btnSave.addEventListener('click', function(){
         if(!foundMoradorRes){ showToast('Morador não encontrado', 'error'); return; }
-        var area = document.getElementById('res-input-area') ? document.getElementById('res-input-area').value : '';
-        var data = document.getElementById('res-input-data') ? document.getElementById('res-input-data').value : '';
+        var area    = areaIn  ? areaIn.value : '';
+        var data    = dataIn  ? dataIn.value : '';
         var horario = document.getElementById('res-input-horario') ? document.getElementById('res-input-horario').value.trim() : '';
         if(!area || !data){ showToast('Preencha todos os campos', 'error'); return; }
+        /* block on confirmed conflict */
+        var blocked = reservas.some(function(r){ return r.area === area && r.data === data && r.status === 'confirmada'; });
+        if(blocked){ showToast('Esta área já está confirmada para esta data', 'error'); return; }
         btnSave.disabled = true; btnSave.textContent = 'Salvando...';
         supaApi('POST', '/reservas', { morador_id: foundMoradorRes.id, area: area, data: data, horario: horario, status: 'pendente' })
           .then(function(){
@@ -3306,7 +3563,7 @@
             loadFromSupabase(); showToast('Reserva registrada!');
           })
           .catch(function(e){
-            showToast('Erro ao salvar: ' + (e.message || 'verifique se a tabela reservas foi criada no Supabase'), 'error');
+            showToast('Erro ao salvar: ' + (e.message || 'verifique a tabela no Supabase'), 'error');
           })
           .finally(function(){
             btnSave.disabled = false; btnSave.textContent = 'Salvar reserva';
@@ -3316,6 +3573,26 @@
 
     function init(){
       setupForm();
+
+      /* calendar navigation */
+      var prev = document.getElementById('cal-prev');
+      var next = document.getElementById('cal-next');
+      if(prev) prev.addEventListener('click', function(){
+        calMonth--; if(calMonth < 0){ calMonth = 11; calYear--; }
+        renderCalendar();
+      });
+      if(next) next.addEventListener('click', function(){
+        calMonth++; if(calMonth > 11){ calMonth = 0; calYear++; }
+        renderCalendar();
+      });
+
+      /* clear date filter on tag click */
+      var tag = document.getElementById('cal-date-tag');
+      if(tag) tag.addEventListener('click', function(){
+        calDateFilter = null; updateDateTag(); renderList(); renderCalendar();
+      });
+
+      /* status filter buttons */
       document.querySelectorAll('[data-res-filter]').forEach(function(btn){
         btn.addEventListener('click', function(){
           currentFilter = btn.getAttribute('data-res-filter');
@@ -3323,12 +3600,16 @@
           renderList();
         });
       });
+
+      /* confirm / cancel buttons (delegated) */
       document.addEventListener('click', function(e){
         var cf = e.target.closest('[data-confirm-reserva]');
         if(cf){ updateStatus(cf.getAttribute('data-confirm-reserva'), 'confirmada'); return; }
         var cr = e.target.closest('[data-cancel-reserva]');
         if(cr){ updateStatus(cr.getAttribute('data-cancel-reserva'), 'cancelada'); }
       });
+
+      renderCalendar();
     }
 
     return { init: init, loadFromSupabase: loadFromSupabase };
