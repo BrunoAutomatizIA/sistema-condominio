@@ -3456,16 +3456,32 @@
       el.innerHTML = filtered.map(renderCard).join('');
     }
 
+    var N8N_NOTIF_URL = 'https://n8n.automacaopme.com.br/webhook/notificar-encomenda';
+
+    function notificarMorador(reserva, status){
+      var phone = reserva && reserva.moradores && reserva.moradores.telefone;
+      if(!phone) return;
+      var digits = phone.replace(/\D/g, '');
+      if(digits.length <= 11) digits = '55' + digits;
+      var dataHora = fmtDataBr(reserva.data) + (reserva.horario ? ' às ' + reserva.horario : '');
+      var text = status === 'confirmada'
+        ? '✅ *Sua reserva foi confirmada!*\n\n📅 *' + reserva.area + '*\n🗓 ' + dataHora + '\n\n_Portaria Digital_'
+        : '❌ *Sua reserva foi cancelada.*\n\n📅 *' + reserva.area + '*\n🗓 ' + dataHora + '\n\nEm caso de dúvidas, fale com a administração.\n\n_Portaria Digital_';
+      fetch(N8N_NOTIF_URL + '?number=' + encodeURIComponent(digits) + '&text=' + encodeURIComponent(text)).catch(function(){});
+    }
+
     function updateStatus(id, status){
+      var reserva = reservas.find(function(r){ return r.id == id; });
       supaApi('PATCH', '/reservas?id=eq.' + id, { status: status }).then(function(){
         reservas = reservas.map(function(r){ return r.id == id ? Object.assign({}, r, { status: status }) : r; });
         renderList(); renderDashWidget(); renderCalendar();
-        showToast(status === 'confirmada' ? 'Reserva confirmada!' : 'Reserva recusada');
+        notificarMorador(reserva, status);
+        showToast(status === 'confirmada' ? 'Reserva confirmada! Morador notificado.' : 'Reserva recusada. Morador notificado.');
       });
     }
 
     function loadFromSupabase(){
-      supaApi('GET', '/reservas?select=*,moradores(nome,apartamento,bloco)&order=data.asc')
+      supaApi('GET', '/reservas?select=*,moradores(nome,apartamento,bloco,telefone)&order=data.asc')
         .then(function(rows){ reservas = rows || []; renderList(); renderDashWidget(); renderCalendar(); })
         .catch(function(){ renderDashWidget(); renderCalendar(); });
     }
