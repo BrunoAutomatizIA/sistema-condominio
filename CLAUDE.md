@@ -47,7 +47,7 @@ comunicados  — id, titulo, mensagem, status, enviado_em, destinatarios, create
 
 ### Entrada e resposta imediata
 ```
-Webhook (POST /testeteste)
+Webhook (POST /condominio)
   ├─► Respond 200   ← responde HTTP imediatamente (padrão async)
   └─► Parsear Mensagem
 ```
