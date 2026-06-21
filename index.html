@@ -1555,47 +1555,11 @@
         <div class="section">
           <div class="section-head">
             <div class="section-title"><svg class="icon" aria-hidden="true"><use href="#icon-circle-check"/></svg> Aguardando aprovação</div>
-            <a href="#" class="section-link" data-page-link="requisicoes">Ver todas <svg class="icon" aria-hidden="true"><use href="#icon-chevron-right"/></svg></a>
+            <a href="#" class="section-link" data-page-link="reservas">Ver todas <svg class="icon" aria-hidden="true"><use href="#icon-chevron-right"/></svg></a>
           </div>
 
-          <div class="approval-list">
-
-            <div class="approval-card">
-              <div class="approval-icon"><svg class="icon" aria-hidden="true"><use href="#icon-calendar-event"/></svg></div>
-              <div class="approval-info">
-                <div class="approval-title">Reserva do salão de festas</div>
-                <div class="approval-meta">Apto 304 · Maria Souza · 21/06, 19h-23h</div>
-              </div>
-              <div class="approval-actions">
-                <button class="btn-approve" aria-label="Aprovar"><svg class="icon" aria-hidden="true"><use href="#icon-circle-check"/></svg></button>
-                <button class="btn-reject" aria-label="Rejeitar"><svg class="icon" aria-hidden="true"><use href="#icon-x"/></svg></button>
-              </div>
-            </div>
-
-            <div class="approval-card">
-              <div class="approval-icon"><svg class="icon" aria-hidden="true"><use href="#icon-id-badge-2"/></svg></div>
-              <div class="approval-info">
-                <div class="approval-title">Liberação de visitante recorrente</div>
-                <div class="approval-meta">Apto 112 · Carlos Lima · diarista, seg-sex</div>
-              </div>
-              <div class="approval-actions">
-                <button class="btn-approve" aria-label="Aprovar"><svg class="icon" aria-hidden="true"><use href="#icon-circle-check"/></svg></button>
-                <button class="btn-reject" aria-label="Rejeitar"><svg class="icon" aria-hidden="true"><use href="#icon-x"/></svg></button>
-              </div>
-            </div>
-
-            <div class="approval-card">
-              <div class="approval-icon"><svg class="icon" aria-hidden="true"><use href="#icon-package"/></svg></div>
-              <div class="approval-info">
-                <div class="approval-title">Autorização de entrega antecipada</div>
-                <div class="approval-meta">Apto 507 · Ana Ferreira · hoje, antes das 8h</div>
-              </div>
-              <div class="approval-actions">
-                <button class="btn-approve" aria-label="Aprovar"><svg class="icon" aria-hidden="true"><use href="#icon-circle-check"/></svg></button>
-                <button class="btn-reject" aria-label="Rejeitar"><svg class="icon" aria-hidden="true"><use href="#icon-x"/></svg></button>
-              </div>
-            </div>
-
+          <div class="approval-list" id="approval-list">
+            <div class="empty-state" style="padding:0.75rem 0;"><div class="empty-state-sub">Carregando...</div></div>
           </div>
         </div>
 
@@ -2913,7 +2877,7 @@
       if(pageId === 'visitantes') VisitorApp.loadFromSupabase();
       if(pageId === 'moradores') MoradorApp.loadFromSupabase();
       if(pageId === 'reservas') ReservaApp.loadFromSupabase();
-      if(pageId === 'dashboard'){ ReservaApp.loadFromSupabase(); ComunicadoApp.loadFromSupabase(); }
+      if(pageId === 'dashboard'){ ReservaApp.loadFromSupabase(); ComunicadoApp.loadFromSupabase(); ApprovalApp.loadFromSupabase(); loadDashboardMetrics(); }
     }
 
     navItems.forEach(function(item){
@@ -3745,10 +3709,80 @@
     return { init: init, loadFromSupabase: loadFromSupabase };
   })();
 
+  /* ================================================
+     APPROVAL APP — fila de aprovações do dashboard
+     ================================================ */
+  var ApprovalApp = (function(){
+    var AREAS_EMOJI = { 'Salão de Festas': '🎉', 'Churrasqueira': '🔥', 'Quadra Esportiva': '🏃' };
+
+    function fmtDataBr(iso){
+      if(!iso) return '';
+      var p = iso.split('-');
+      return p.length < 3 ? iso : p[2] + '/' + p[1] + '/' + p[0];
+    }
+
+    function render(items){
+      var el = document.getElementById('approval-list');
+      if(!el) return;
+      if(!items || !items.length){
+        el.innerHTML = '<div class="empty-state" style="padding:0.75rem 0;"><div class="empty-state-sub">Nenhuma reserva aguardando aprovação</div></div>';
+        return;
+      }
+      el.innerHTML = items.map(function(r){
+        var m = r.moradores || {};
+        var emoji = AREAS_EMOJI[r.area] || '📅';
+        var aptoStr = m.apartamento ? 'Apto ' + m.apartamento : '';
+        var nomeStr = m.nome || '';
+        var meta = [aptoStr, nomeStr, fmtDataBr(r.data) + (r.horario ? ', ' + r.horario : '')].filter(Boolean).join(' · ');
+        return '<div class="approval-card">' +
+          '<div class="approval-icon"><svg class="icon" aria-hidden="true"><use href="#icon-calendar-event"/></svg></div>' +
+          '<div class="approval-info">' +
+            '<div class="approval-title">' + emoji + ' ' + r.area + '</div>' +
+            '<div class="approval-meta">' + meta + '</div>' +
+          '</div>' +
+          '<div class="approval-actions">' +
+            '<button class="btn-approve" aria-label="Aprovar" data-apv-id="' + r.id + '" data-apv-action="confirmada"><svg class="icon" aria-hidden="true"><use href="#icon-circle-check"/></svg></button>' +
+            '<button class="btn-reject"  aria-label="Rejeitar" data-apv-id="' + r.id + '" data-apv-action="cancelada"><svg class="icon" aria-hidden="true"><use href="#icon-x"/></svg></button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function loadFromSupabase(){
+      supaApi('GET', '/reservas?status=eq.pendente&select=*,moradores(nome,apartamento,bloco)&order=created_at.asc&limit=5')
+        .then(function(rows){ render(rows); })
+        .catch(function(){ render([]); });
+    }
+
+    function init(){
+      document.addEventListener('click', function(e){
+        var btn = e.target.closest('[data-apv-id]');
+        if(!btn) return;
+        var id     = btn.getAttribute('data-apv-id');
+        var action = btn.getAttribute('data-apv-action');
+        btn.disabled = true;
+        supaApi('PATCH', '/reservas?id=eq.' + id, { status: action })
+          .then(function(){
+            showToast(action === 'confirmada' ? 'Reserva confirmada!' : 'Reserva recusada');
+            loadFromSupabase();
+            ReservaApp.loadFromSupabase();
+          })
+          .catch(function(){
+            showToast('Erro ao atualizar reserva', 'error');
+            btn.disabled = false;
+          });
+      });
+    }
+
+    return { init: init, loadFromSupabase: loadFromSupabase };
+  })();
+
   ReservaApp.init();
   ComunicadoApp.init();
+  ApprovalApp.init();
   ReservaApp.loadFromSupabase();
   ComunicadoApp.loadFromSupabase();
+  ApprovalApp.loadFromSupabase();
 
   // Botão atualizar do topbar
   (function(){
@@ -3760,6 +3794,7 @@
       MoradorApp.loadFromSupabase();
       ReservaApp.loadFromSupabase();
       ComunicadoApp.loadFromSupabase();
+      ApprovalApp.loadFromSupabase();
       loadDashboardMetrics();
       showToast('Dados atualizados!');
     });
@@ -3774,6 +3809,7 @@
     MoradorApp.loadFromSupabase();
     ReservaApp.loadFromSupabase();
     ComunicadoApp.loadFromSupabase();
+    ApprovalApp.loadFromSupabase();
     loadDashboardMetrics();
   }, 60000);
 
