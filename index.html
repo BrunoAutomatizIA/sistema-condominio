@@ -1735,10 +1735,15 @@
             <input type="text" id="package-input-apto" placeholder="Ex: 304">
           </label>
 
-          <label class="form-field">
-            <span class="form-label">Bloco</span>
-            <input type="text" id="package-input-bloco" placeholder="Ex: A (opcional)">
-          </label>
+          <div class="form-field">
+            <span class="form-label">Bloco <span style="color:var(--status-danger-fg)">*</span></span>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="text" id="package-input-bloco" placeholder="Ex: A" style="flex:1">
+              <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text-secondary);cursor:pointer;white-space:nowrap;">
+                <input type="checkbox" id="package-bloco-na" style="accent-color:var(--brand-primary);width:15px;height:15px;cursor:pointer;"> N/A
+              </label>
+            </div>
+          </div>
 
           <label class="form-field form-field-full">
             <span class="form-label">Descrição</span>
@@ -2478,9 +2483,9 @@
 
       if(!apto){ savePackage(null, '', ''); return; }
 
-      /* busca morador por apartamento (e bloco se informado) */
+      /* busca morador por apartamento (bloco só filtra se não for N/A) */
       var query = '/moradores?apartamento=eq.' + encodeURIComponent(apto);
-      if(bloco) query += '&bloco=eq.' + encodeURIComponent(bloco);
+      if(bloco && bloco !== 'N/A') query += '&bloco=eq.' + encodeURIComponent(bloco);
       query += '&select=id,nome,telefone,apartamento,bloco&limit=1';
 
       supaApi('GET', query).then(function(rows){
@@ -2526,12 +2531,23 @@
       clearForm();
     });
 
+    /* checkbox N/A desabilita o campo bloco */
+    var blocoNa = document.getElementById('package-bloco-na');
+    var blocoInput = document.getElementById('package-input-bloco');
+    if(blocoNa) blocoNa.addEventListener('change', function(){
+      blocoInput.disabled = this.checked;
+      if(this.checked) blocoInput.value = '';
+    });
+
     btnSave.addEventListener('click', function(){
-      var apto = document.getElementById('package-input-apto').value.trim();
-      if(!apto){ showToast('Informe o apartamento', 'error'); document.getElementById('package-input-apto').focus(); return; }
+      var apto  = document.getElementById('package-input-apto').value.trim();
+      var na    = document.getElementById('package-bloco-na').checked;
+      var bloco = na ? 'N/A' : document.getElementById('package-input-bloco').value.trim();
+      if(!apto) { showToast('Informe o apartamento', 'error'); document.getElementById('package-input-apto').focus(); return; }
+      if(!bloco){ showToast('Informe o bloco ou marque N/A', 'error'); document.getElementById('package-input-bloco').focus(); return; }
       PackageApp.create({
         apto: apto,
-        bloco: document.getElementById('package-input-bloco').value.trim(),
+        bloco: bloco,
         description: document.getElementById('package-input-description').value.trim()
       });
       form.hidden = true;
@@ -2541,6 +2557,8 @@
     function clearForm(){
       document.getElementById('package-input-apto').value = '';
       document.getElementById('package-input-bloco').value = '';
+      document.getElementById('package-input-bloco').disabled = false;
+      document.getElementById('package-bloco-na').checked = false;
       document.getElementById('package-input-description').value = '';
     }
   })();
