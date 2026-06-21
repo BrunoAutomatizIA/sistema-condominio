@@ -210,9 +210,13 @@ SPA pura: nenhum framework, nenhum build. Abre direto no browser. Navegação cl
 - Bloco obrigatório com opção N/A (checkbox desabilita campo)
 
 **Reservas (`ReservaApp`):**
-- Lista filtrada por status com botões Confirmar / Recusar em cada card pendente
-- PATCH `status='confirmada'` ou `'cancelada'` no Supabase ao clicar nos botões
+- Layout 2 colunas no desktop: calendário mensal fixo à esquerda, lista à direita
+- **Calendário:** chips coloridos por área (🔵 Salão · 🟠 Churrasqueira · 🟢 Quadra); chips opacos = pendente, sólidos = confirmada; canceladas ocultadas; clicar em dia filtra a lista para aquela data; tag "📅 DD/MM ×" aparece para limpar o filtro
+- **Navegação:** botões ‹/› percorrem meses; variáveis `calYear`/`calMonth`/`calDateFilter` controlam o estado
+- Lista filtrada por status (todas/pendentes/confirmadas/canceladas) + filtro de data do calendário combinados
+- Botões Confirmar / Recusar em cards pendentes; PATCH `status` + re-renderiza calendário e widget do dashboard
 - Form de nova reserva (admin): busca morador por apto+bloco com preview; campos área, data (type=date), horário
+- **Validação de conflito em tempo real:** ao mudar área ou data, verifica reservas existentes — aviso amarelo se há pendente, vermelho + bloqueio do botão se há confirmada na mesma área+data
 - Widget "Próximas reservas" no dashboard: 5 próximas reservas não canceladas, ordenadas por data
 - `fmtDataBr()` converte ISO YYYY-MM-DD para DD/MM/AAAA na exibição
 
@@ -350,8 +354,8 @@ Todas as páginas recarregam dados do Supabase ao serem navegadas. Auto-refresh 
   ALTER TABLE comunicados ENABLE ROW LEVEL SECURITY;
   CREATE POLICY "anon all" ON comunicados USING (true) WITH CHECK (true);
   ```
-- **Reservas de áreas comuns** — implementado: bot com fluxo multi-step (`reserva_area` → `reserva_data` → `reserva_horario`), página de gestão no dashboard (`ReservaApp`), widget dinâmico na dashboard, SQL acima. A fila de aprovações ainda está mockada.
-- **Comunicados** — implementado: modal para criar/enviar comunicados, `ComunicadoApp` conectado à tabela `comunicados`, envio em massa via webhook n8n WhatsApp.
+- **Reservas de áreas comuns** ✅ — bot com fluxo multi-step (`reserva_area` → `reserva_data` → `reserva_horario`); menu posição 4 ("Fazer Reserva"); dashboard com calendário mensal, validação de conflito em tempo real, kanban de aprovação e widget no painel; tabela `reservas` criada no Supabase. A fila de aprovações do painel principal ainda está mockada.
+- **Comunicados** ✅ — modal para criar/enviar comunicados, `ComunicadoApp` conectado à tabela `comunicados`, envio em massa via webhook n8n WhatsApp; tabela `comunicados` criada no Supabase.
 - **Painel de aprovações** — botões de aprovar/rejeitar existem no HTML mas sem JS conectado.
 - **Nós legados** — `Resp Visitantes` e `Resp Ocorrencias` (usando API key `720C1736...`) são stubs antigos que foram substituídos pelos fluxos multi-step. Podem ser removidos do workflow.
 - **Segurança** — mover as chaves de API (Supabase anon key e Evolution API key) para variáveis de ambiente do n8n antes de usar em produção com múltiplos clientes.
