@@ -1,10 +1,11 @@
 # Condozap — Bot de Portaria para WhatsApp
 
-Produto da **Automatiz.ia** que automatiza a portaria de condomínios via WhatsApp. Composto por dois artefatos independentes:
+Produto da **Automatiz.ia** que automatiza a portaria de condomínios via WhatsApp. Composto por três artefatos:
 
 | Arquivo | O que é |
 |---|---|
-| `bot_condominio.json` | Workflow n8n (JSON exportado) — o cérebro do bot |
+| `bot_condominio.json` | Workflow n8n principal (bot WhatsApp) |
+| `notificacao_webhook.json` | Workflow n8n auxiliar — webhook de notificação de encomendas |
 | `index.html` | Dashboard admin SPA (HTML/CSS/JS puro, sem build) |
 
 ---
@@ -13,11 +14,11 @@ Produto da **Automatiz.ia** que automatiza a portaria de condomínios via WhatsA
 
 | Serviço | Uso | Credencial no projeto |
 |---|---|---|
-| **n8n** | Plataforma de automação que roda o workflow | — |
+| **n8n** | Plataforma de automação que roda os workflows | host: `n8n.automacaopme.com.br` |
 | **Evolution API** | Gateway WhatsApp | `apikey: F5E45E6A06AC-4857-807A-923D226DE8E1` (host: `evolution.automacaopme.com.br`, instance: `Bot_Condominio`) |
 | **Supabase** | Banco PostgreSQL via REST | anon key hardcoded em ambos os arquivos (project: `rcghqqwbwxbhrxjwutqu`) |
 
-> As credenciais estão hardcoded nos dois arquivos. Ao escalar ou entregar para outros clientes, extraí-las para variáveis de ambiente no n8n ou para um arquivo de configuração separado.
+> As credenciais estão hardcoded nos arquivos. Ao escalar ou entregar para outros clientes, extraí-las para variáveis de ambiente no n8n ou para um arquivo de configuração separado.
 
 ---
 
@@ -26,7 +27,7 @@ Produto da **Automatiz.ia** que automatiza a portaria de condomínios via WhatsA
 ```
 moradores    — id, nome, telefone (PK de negócio), apartamento, bloco
 sessoes      — telefone (PK), etapa, dados (JSONB), updated_at
-encomendas   — id, morador_id, descricao, data_recebimento, status, retirada_em
+encomendas   — id, morador_id (FK→moradores), descricao, data_recebimento, status, retirada_em
 visitantes   — id, nome, morador_id, documento, entrada
 atendimentos — id, telefone, titulo, mensagem, local_ocorrencia, urgencia, status, created_at
 requisicoes  — id, telefone, morador_id, tipo, local_servico, descricao, urgencia, status, created_at
@@ -124,7 +125,7 @@ DELETE Sessao → Fluxo OK? (IF)
 ```
 > A sessão usa DELETE+INSERT, não UPSERT. Isso garante sempre um único registro por telefone.
 
-### Fluxo de solicitação de serviço (multi-step) ← NOVO
+### Fluxo de solicitação de serviço (multi-step)
 **Etapas de sessão:**
 ```
 servico_tipo → servico_local → servico_descricao → servico_urgencia → (ok=true)
@@ -150,6 +151,20 @@ Limpa a sessão e orienta o morador a digitar `menu`.
 
 ---
 
+## Webhook de Notificação (`notificacao_webhook.json`)
+
+Workflow n8n auxiliar importado junto com o bot principal. Permite que o dashboard envie WhatsApp sem bloqueio de CORS (browser não pode chamar Evolution API diretamente com PUT/POST+JSON).
+
+**Endpoint:** `GET https://n8n.automacaopme.com.br/webhook/notificar-encomenda?number=55...&text=...`
+
+**Fluxo:** Webhook1 (GET) → Enviar WhatsApp (POST Evolution API `Bot_Condominio`)
+
+- Response Mode: "When Last Node Finishes" (sem nó Responder 200)
+- Expressões no nó Enviar WhatsApp: `{{ $json.query.number }}` e `{{ $json.query.text }}`
+- Usado pelo `PackageApp.advance()` ao mover encomenda para "Notificado"
+
+---
+
 ## Dashboard Admin (`index.html`)
 
 SPA pura: nenhum framework, nenhum build. Abre direto no browser. Navegação client-side via atributos `data-page`.
@@ -158,11 +173,31 @@ SPA pura: nenhum framework, nenhum build. Abre direto no browser. Navegação cl
 | Página | Conteúdo |
 |---|---|
 | **Dashboard** | Status do bot, métricas (ocorrências, visitantes, encomendas, moradores), fila de aprovações, ocorrências em aberto (top 3), reservas, comunicados, atividade recente |
-| **Requisições** | Kanban mobile (grupos por urgência→status) / matriz urgência×status no desktop — conectado à tabela `requisicoes` no Supabase |
-| **Ocorrências** | Kanban 4 colunas: Aberta → Em análise → Em andamento → Resolvida — conectado à tabela `atendimentos` no Supabase |
-| **Encomendas** | Kanban 3 colunas: Recebida → Notificado → Retirada |
+| **Requisições** | Kanban conectado à tabela `requisicoes` |
+| **Ocorrências** | Kanban 4 colunas: Aberta → Em análise → Em andamento → Resolvida — conectado à tabela `atendimentos` |
+| **Encomendas** | Kanban 3 colunas: Recebida → Notificado → Retirada. Avançar para "Notificado" dispara WhatsApp via webhook n8n |
 | **Visitantes** | Lista com filtros (todos/hoje/sem saída) + form de registro manual |
-| **Moradores** | Busca por nome/apt + lista + form de cadastro manual |
+| **Moradores** | Busca + lista agrupada por bloco (ordem numérica de apartamento) + form de cadastro + edição inline + exclusão |
+
+### Funcionalidades do dashboard por módulo
+
+**Encomendas (`PackageApp`):**
+- Card mostra: descrição, nome do morador em negrito, Ap. X · Bl. Y
+- Botão ✕ exclui a encomenda do Supabase
+- Avançar para "Notificado" → envia WhatsApp via `sendWhatsApp()` (GET ao webhook n8n)
+- Form de nova encomenda: busca morador por apto+bloco com preview em tempo real; salva somente se morador for encontrado (`createWithMorador`)
+- `fmtRelative()` mostra hora real HH:MM (ex: "hoje 14:19") em vez de apenas "há Xh"
+
+**Moradores (`MoradorApp`):**
+- Lista agrupada por bloco com cabeçalho "Bloco A (N)" e ordenação numérica de apartamento
+- Botão "✏️ Editar" abre modal com campos pré-preenchidos; salva via PATCH no Supabase
+- Botão "🗑 Excluir" com confirmação; DELETE no Supabase
+- Telefone obrigatório no cadastro
+- Bloco obrigatório com opção N/A (checkbox desabilita campo)
+
+**Configurações do Bot (modal):**
+- Ícone ⚙️ na topbar abre modal de configurações
+- Campo para alterar o nome do bot no WhatsApp via `PUT /instance/updateProfileName/Bot_Condominio`
 
 ### Tema
 - **Dark:** `--bg-page: #0B1623` (navy Automatiz.ia)
@@ -226,15 +261,15 @@ showToast('Algo deu errado', 'error')
 
 ## Persistência do dashboard
 
-Todas as páginas recarregam dados do Supabase ao serem navegadas (não apenas na primeira visita). Auto-refresh a cada 60s cobre todas as páginas. Apps e suas fontes:
+Todas as páginas recarregam dados do Supabase ao serem navegadas. Auto-refresh a cada 60s cobre todas as páginas.
 
 | App JS | Tabela Supabase | Padrão de escrita |
 |---|---|---|
 | `OccApp` | `atendimentos` | PATCH status via `advance()` |
 | `ReqApp` | `requisicoes` | PATCH status via `advance()` |
-| `PackageApp` | `encomendas` | PATCH status |
+| `PackageApp` | `encomendas` | PATCH status + DELETE + POST via `createWithMorador()` |
 | `VisitorApp` | `visitantes` | POST + lista |
-| `MoradorApp` | `moradores` | POST + busca |
+| `MoradorApp` | `moradores` | POST + PATCH (edição) + DELETE + busca |
 
 ---
 
@@ -262,7 +297,6 @@ Todas as páginas recarregam dados do Supabase ao serem navegadas (não apenas n
   ALTER TABLE requisicoes ENABLE ROW LEVEL SECURITY;
   CREATE POLICY "anon all" ON requisicoes USING (true) WITH CHECK (true);
   ```
-- **Reimportar bot no n8n** — após editar `bot_condominio.json`, reimportar ou editar os nós manualmente (Roteador + Switch Rota + Enviar Menu + novos nós do fluxo Serviços).
 - **Reservas de áreas comuns** — UI no dashboard está pronta (seção "Próximas reservas"), mas o bot ainda não tem fluxo. A fila de aprovações também está mockada.
 - **Comunicados** — UI existe, sem integração real com o banco ainda.
 - **Painel de aprovações** — botões de aprovar/rejeitar existem no HTML mas sem JS conectado.
