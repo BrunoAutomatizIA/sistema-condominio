@@ -2431,16 +2431,15 @@
       if(metric) metric.textContent = pending;
     }
 
-    var EVOL_URL = 'https://evolution.automacaopme.com.br/message/sendText/N8N-Portaria';
-    var EVOL_KEY = 'F5E45E6A06AC-4857-807A-923D226DE8E1';
+    /* Proxy n8n — evita bloqueio de CORS do browser para Evolution API */
+    var N8N_NOTIF_URL = 'https://n8n.automacaopme.com.br/webhook/notificar-encomenda';
 
     function sendWhatsApp(phone, text){
-      /* normaliza: remove tudo que não é dígito, adiciona 55 se faltar */
       var digits = phone.replace(/\D/g, '');
       if(digits.length <= 11) digits = '55' + digits;
-      return fetch(EVOL_URL, {
+      return fetch(N8N_NOTIF_URL, {
         method: 'POST',
-        headers: { 'apikey': EVOL_KEY, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ number: digits, text: text })
       });
     }
