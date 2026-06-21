@@ -862,6 +862,62 @@
   }
 
   /* ============================================
+     MORADORES — CARDS GRID
+     ============================================ */
+  .morador-section-hdr{
+    grid-column: 1 / -1;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-tertiary);
+    padding: .6rem 0 .35rem;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: .15rem;
+  }
+  .morador-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: .75rem;
+    margin-top: .75rem;
+  }
+  .morador-card{
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    transition: border-color .15s;
+  }
+  .morador-card:hover{ border-color: var(--brand-primary); }
+  .morador-avatar{
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    background: var(--status-info-bg);
+    color: var(--brand-primary);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 14px; flex-shrink: 0;
+  }
+  .morador-card-name{ font-size: 14px; font-weight: 700; line-height: 1.3; }
+  .morador-card-meta{ font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+  .morador-card-phone{ font-size: 12px; color: var(--text-tertiary); margin-top: .15rem; }
+  .morador-card-actions{
+    display: flex; gap: .4rem;
+    margin-top: auto; padding-top: .65rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .morador-card-actions button{
+    flex: 1; font-size: 11px; padding: .3rem .5rem;
+    border-radius: var(--radius-sm); border: 1px solid var(--border-default);
+    background: none; cursor: pointer; color: var(--text-secondary);
+    transition: background .12s, color .12s;
+  }
+  .morador-card-actions .btn-edit:hover{ background: var(--status-info-bg); color: var(--brand-primary); border-color: var(--brand-primary); }
+  .morador-card-actions .btn-del:hover{ background: var(--status-danger-bg); color: var(--status-danger-fg); border-color: var(--status-danger-fg); }
+
+  /* ============================================
      CALENDARIO DE RESERVAS
      ============================================ */
   .res-layout{
@@ -2041,7 +2097,7 @@
       </div>
 
       <!-- LISTA MORADORES -->
-      <div class="occurrence-list" id="morador-list">
+      <div id="morador-list">
         <div class="empty-state">
           <svg class="icon" aria-hidden="true" style="font-size:2rem"><use href="#icon-users"/></svg>
           <div class="empty-state-title">Carregando moradores...</div>
@@ -3099,23 +3155,21 @@
     }
 
     function renderCard(m){
-      var initials = (m.nome||'?').split(' ').slice(0,2).map(function(n){ return n[0]; }).join('').toUpperCase();
-      var apto = 'Ap. ' + escHtml(m.apartamento||'—');
-      return '<div class="occurrence-card">' +
-        '<div class="occ-top">' +
-          '<div style="display:flex;align-items:center;gap:12px;">' +
-            '<div style="width:38px;height:38px;border-radius:50%;background:var(--status-info-bg);color:var(--brand-primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">' + initials + '</div>' +
-            '<div>' +
-              '<div class="occ-title">' + escHtml(m.nome||'—') + '</div>' +
-              '<div class="occ-desc" style="margin:0;">' + apto + '</div>' +
-            '</div>' +
-          '</div>' +
-          '<div style="display:flex;gap:8px;">' +
-            '<button class="btn-resolve" data-edit-morador="' + m.id + '" style="background:var(--status-info-bg);color:var(--brand-primary);border-color:transparent;">✏️ Editar</button>' +
-            '<button class="btn-resolve" style="background:var(--status-danger-bg);color:var(--status-danger-fg);border-color:transparent;" onclick="MoradorApp.excluir(' + m.id + ')">🗑 Excluir</button>' +
+      var initials = (m.nome||'?').split(' ').filter(Boolean).slice(0,2).map(function(n){ return n[0]; }).join('').toUpperCase();
+      var aptoStr  = 'Ap. ' + escHtml(m.apartamento||'—') + (m.bloco ? ' · Bl. ' + escHtml(m.bloco) : '');
+      return '<div class="morador-card">' +
+        '<div style="display:flex;align-items:center;gap:.75rem;">' +
+          '<div class="morador-avatar">' + initials + '</div>' +
+          '<div style="min-width:0;">' +
+            '<div class="morador-card-name">' + escHtml(m.nome||'—') + '</div>' +
+            '<div class="morador-card-meta">' + aptoStr + '</div>' +
           '</div>' +
         '</div>' +
-        (m.telefone ? '<div class="occ-bottom" style="margin-top:0.5rem;"><div class="occ-meta"><span class="occ-meta-item">📞 ' + escHtml(m.telefone) + '</span></div></div>' : '') +
+        (m.telefone ? '<div class="morador-card-phone">📞 ' + escHtml(m.telefone) + '</div>' : '') +
+        '<div class="morador-card-actions">' +
+          '<button class="btn-edit" data-edit-morador="' + m.id + '">✏️ Editar</button>' +
+          '<button class="btn-del" onclick="MoradorApp.excluir(' + m.id + ')">🗑 Excluir</button>' +
+        '</div>' +
       '</div>';
     }
 
@@ -3128,25 +3182,27 @@
         return;
       }
 
-      /* agrupar por bloco */
+      /* agrupar por bloco (já vem ordenado A-Z pelo sortMoradores) */
       var groups = [];
-      var seen = {};
+      var seen   = {};
       data.forEach(function(m){
         var key = m.bloco || '';
         if(!seen[key]){ seen[key] = true; groups.push({ bloco: key, items: [] }); }
-        groups[groups.length - 1].items.push(m);
+        groups[groups.findIndex(function(g){ return g.bloco === key; })].items.push(m);
       });
 
       var multiBloco = groups.length > 1 || (groups.length === 1 && groups[0].bloco !== '');
 
-      container.innerHTML = groups.map(function(g){
-        var header = '';
+      var html = '<div class="morador-grid">';
+      groups.forEach(function(g){
         if(multiBloco){
           var label = g.bloco ? 'Bloco ' + escHtml(g.bloco) : 'Sem bloco';
-          header = '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-tertiary);padding:0.75rem 0 0.4rem;border-top:1px solid var(--border-default);margin-top:0.5rem;">' + label + ' <span style="font-weight:400;color:var(--text-tertiary);">(' + g.items.length + ')</span></div>';
+          html += '<div class="morador-section-hdr">' + label + ' <span style="font-weight:400;">(' + g.items.length + ')</span></div>';
         }
-        return header + g.items.map(renderCard).join('');
-      }).join('');
+        g.items.forEach(function(m){ html += renderCard(m); });
+      });
+      html += '</div>';
+      container.innerHTML = html;
     }
 
     function escHtml(s){ var d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
