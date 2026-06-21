@@ -2860,9 +2860,21 @@
   var MoradorApp = (function(){
     var moradores = [];
 
+    function sortMoradores(list){
+      return list.slice().sort(function(a, b){
+        var ba = (a.bloco || '').toLowerCase();
+        var bb = (b.bloco || '').toLowerCase();
+        if(ba < bb) return -1;
+        if(ba > bb) return 1;
+        var na = parseInt(a.apartamento) || 0;
+        var nb = parseInt(b.apartamento) || 0;
+        return na - nb;
+      });
+    }
+
     function loadFromSupabase(){
-      return supaApi('GET', '/moradores?select=*&order=nome.asc').then(function(rows){
-        moradores = rows;
+      return supaApi('GET', '/moradores?select=*').then(function(rows){
+        moradores = sortMoradores(rows);
         render();
         // Atualiza métrica
         var el = document.getElementById('metric-moradores-value');
@@ -2879,33 +2891,54 @@
       }).catch(function(){ showToast('Erro ao excluir', 'error'); });
     }
 
+    function renderCard(m){
+      var initials = (m.nome||'?').split(' ').slice(0,2).map(function(n){ return n[0]; }).join('').toUpperCase();
+      var apto = 'Ap. ' + escHtml(m.apartamento||'—');
+      return '<div class="occurrence-card">' +
+        '<div class="occ-top">' +
+          '<div style="display:flex;align-items:center;gap:12px;">' +
+            '<div style="width:38px;height:38px;border-radius:50%;background:var(--status-info-bg);color:var(--brand-primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">' + initials + '</div>' +
+            '<div>' +
+              '<div class="occ-title">' + escHtml(m.nome||'—') + '</div>' +
+              '<div class="occ-desc" style="margin:0;">' + apto + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;">' +
+            '<button class="btn-resolve" data-edit-morador="' + m.id + '" style="background:var(--status-info-bg);color:var(--brand-primary);border-color:transparent;">✏️ Editar</button>' +
+            '<button class="btn-resolve" style="background:var(--status-danger-bg);color:var(--status-danger-fg);border-color:transparent;" onclick="MoradorApp.excluir(' + m.id + ')">🗑 Excluir</button>' +
+          '</div>' +
+        '</div>' +
+        (m.telefone ? '<div class="occ-bottom" style="margin-top:0.5rem;"><div class="occ-meta"><span class="occ-meta-item">📞 ' + escHtml(m.telefone) + '</span></div></div>' : '') +
+      '</div>';
+    }
+
     function render(list){
       var container = document.getElementById('morador-list');
       if(!container) return;
-      var data = list || moradores;
+      var data = list ? sortMoradores(list) : moradores;
       if(!data.length){
         container.innerHTML = '<div class="empty-state"><div class="empty-state-title">Nenhum morador cadastrado</div></div>';
         return;
       }
-      container.innerHTML = data.map(function(m){
-        var initials = (m.nome||'?').split(' ').slice(0,2).map(function(n){ return n[0]; }).join('').toUpperCase();
-        var apto = 'Ap. ' + escHtml(m.apartamento||'—') + (m.bloco ? ' · Bl. ' + escHtml(m.bloco) : '');
-        return '<div class="occurrence-card">' +
-          '<div class="occ-top">' +
-            '<div style="display:flex;align-items:center;gap:12px;">' +
-              '<div style="width:38px;height:38px;border-radius:50%;background:var(--status-info-bg);color:var(--brand-primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">' + initials + '</div>' +
-              '<div>' +
-                '<div class="occ-title">' + escHtml(m.nome||'—') + '</div>' +
-                '<div class="occ-desc" style="margin:0;">' + apto + '</div>' +
-              '</div>' +
-            '</div>' +
-            '<div style="display:flex;gap:8px;">' +
-              '<button class="btn-resolve" data-edit-morador="' + m.id + '" style="background:var(--status-info-bg);color:var(--brand-primary);border-color:transparent;">✏️ Editar</button>' +
-              '<button class="btn-resolve" style="background:var(--status-danger-bg);color:var(--status-danger-fg);border-color:transparent;" onclick="MoradorApp.excluir(' + m.id + ')">🗑 Excluir</button>' +
-            '</div>' +
-          '</div>' +
-          (m.telefone ? '<div class="occ-bottom" style="margin-top:0.5rem;"><div class="occ-meta"><span class="occ-meta-item">📞 ' + escHtml(m.telefone) + '</span></div></div>' : '') +
-        '</div>';
+
+      /* agrupar por bloco */
+      var groups = [];
+      var seen = {};
+      data.forEach(function(m){
+        var key = m.bloco || '';
+        if(!seen[key]){ seen[key] = true; groups.push({ bloco: key, items: [] }); }
+        groups[groups.length - 1].items.push(m);
+      });
+
+      var multiBloco = groups.length > 1 || (groups.length === 1 && groups[0].bloco !== '');
+
+      container.innerHTML = groups.map(function(g){
+        var header = '';
+        if(multiBloco){
+          var label = g.bloco ? 'Bloco ' + escHtml(g.bloco) : 'Sem bloco';
+          header = '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-tertiary);padding:0.75rem 0 0.4rem;border-top:1px solid var(--border-default);margin-top:0.5rem;">' + label + ' <span style="font-weight:400;color:var(--text-tertiary);">(' + g.items.length + ')</span></div>';
+        }
+        return header + g.items.map(renderCard).join('');
       }).join('');
     }
 
@@ -2914,7 +2947,7 @@
     function create(data){
       supaApi('POST', '/moradores', data).then(function(rows){
         var row = Array.isArray(rows) ? rows[0] : rows;
-        if(row) moradores.unshift(row);
+        if(row) moradores = sortMoradores(moradores.concat([row]));
         render();
         var el = document.getElementById('metric-moradores-value');
         if(el) el.textContent = moradores.length;
