@@ -3,45 +3,45 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>EscolaZap — Painel da Escola</title>
-<meta name="description" content="Dashboard administrativo EscolaZap: gerencie responsáveis, cardápio, agenda, ocorrências, avisos e comunicados da escola infantil via WhatsApp."/>
+<title>Escola Digital — Colégio Raio de Luz</title>
+<meta name="description" content="Painel administrativo Escola Digital — Colégio Raio de Luz: gerencie responsáveis, cardápio, agenda, ocorrências, avisos e comunicados via WhatsApp."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 <style>
 /* ===== DESIGN TOKENS ===== */
 :root {
-  --brand-primary:       #27AE60;
-  --brand-primary-dark:  #1A7A43;
-  --brand-secondary:     #8E44AD;
-  --brand-secondary-dark:#6C3483;
-  --brand-accent:        #F39C12;
-  --brand-accent-dark:   #D68910;
+  --brand-primary:       #1E72BE;
+  --brand-primary-dark:  #155A97;
+  --brand-secondary:     #7DC242;
+  --brand-secondary-dark:#5F9930;
+  --brand-accent:        #FBB040;
+  --brand-accent-dark:   #D9960A;
   --brand-danger:        #E74C3C;
   --brand-info:          #2980B9;
 
-  --bg-page:    #F4FDF6;
+  --bg-page:    #F0F6FF;
   --bg-surface: #FFFFFF;
-  --bg-surface2:#F0F9F3;
-  --bg-hover:   #E8F8ED;
-  --border:     #C8E6C9;
-  --border-soft:#E8F5E9;
-  --text-main:  #1A2E22;
-  --text-sub:   #4A7C5C;
-  --text-muted: #7DAB8A;
-  --sidebar-bg: #1A2E22;
-  --sidebar-text:#C8E6C9;
-  --sidebar-active:#27AE60;
+  --bg-surface2:#EAF2FF;
+  --bg-hover:   #DCF0FF;
+  --border:     #B8D4F0;
+  --border-soft:#DDEEFF;
+  --text-main:  #0D2140;
+  --text-sub:   #3A6090;
+  --text-muted: #7A9CC0;
+  --sidebar-bg: #0D2140;
+  --sidebar-text:#B8D4F0;
+  --sidebar-active:#1E72BE;
 
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
   --radius-xl: 28px;
 
-  --shadow-xs: 0 1px 3px rgba(39,174,96,.08);
-  --shadow-sm: 0 2px 8px rgba(39,174,96,.12);
-  --shadow-md: 0 4px 20px rgba(39,174,96,.16);
-  --shadow-lg: 0 8px 40px rgba(39,174,96,.20);
+  --shadow-xs: 0 1px 3px rgba(30,114,190,.08);
+  --shadow-sm: 0 2px 8px rgba(30,114,190,.12);
+  --shadow-md: 0 4px 20px rgba(30,114,190,.16);
+  --shadow-lg: 0 8px 40px rgba(30,114,190,.20);
 
   --font-main: 'Nunito', sans-serif;
   --font-mono: 'Space Mono', monospace;
@@ -51,17 +51,17 @@
   --transition: all .2s cubic-bezier(.4,0,.2,1);
 }
 [data-theme="dark"] {
-  --bg-page:    #0D1B12;
-  --bg-surface: #142019;
-  --bg-surface2:#1A2E22;
-  --bg-hover:   #1F3829;
-  --border:     #2A4A35;
-  --border-soft:#1E3527;
-  --text-main:  #E8F5EB;
-  --text-sub:   #8BC4A0;
-  --text-muted: #5A8A6A;
-  --sidebar-bg: #0A1510;
-  --sidebar-text:#7DAB8A;
+  --bg-page:    #091828;
+  --bg-surface: #0F2235;
+  --bg-surface2:#142D47;
+  --bg-hover:   #1A3A5C;
+  --border:     #1E4A72;
+  --border-soft:#16384F;
+  --text-main:  #E0EEFF;
+  --text-sub:   #80AACC;
+  --text-muted: #4A7A9B;
+  --sidebar-bg: #060E1A;
+  --sidebar-text:#7AAFCA;
 }
 
 /* ===== RESET & BASE ===== */
@@ -107,16 +107,20 @@ img { max-width:100%; }
 .sidebar-logo-mark {
   display:flex; align-items:center; gap:10px;
 }
-.sidebar-logo-icon {
-  width:38px; height:38px;
-  background:linear-gradient(135deg,var(--brand-primary),var(--brand-secondary));
+.sidebar-logo-img-wrap {
+  background:rgba(255,255,255,.96);
   border-radius:10px;
+  padding:7px 12px;
   display:flex; align-items:center; justify-content:center;
-  font-size:20px;
 }
-.sidebar-logo-text { line-height:1.2; }
-.sidebar-logo-title { font-size:16px; font-weight:800; color:#fff; letter-spacing:-.3px; }
-.sidebar-logo-sub { font-size:11px; color:var(--sidebar-text); font-weight:500; }
+.sidebar-logo-img-wrap img {
+  height:34px; width:auto; display:block;
+}
+.sidebar-logo-caption {
+  font-size:10px; font-weight:700; letter-spacing:.8px;
+  text-transform:uppercase; color:var(--sidebar-text);
+  margin-top:8px; text-align:center;
+}
 
 .sidebar-nav { flex:1; padding:12px 0; overflow-y:auto; }
 .nav-section { padding:8px 16px 4px; }
@@ -135,7 +139,7 @@ img { max-width:100%; }
 }
 .nav-item:hover { background:rgba(255,255,255,.05); color:#fff; }
 .nav-item.active {
-  background:linear-gradient(90deg,rgba(39,174,96,.25),rgba(39,174,96,.05));
+  background:linear-gradient(90deg,rgba(30,114,190,.25),rgba(30,114,190,.05));
   color:#fff;
 }
 .nav-item.active::before {
@@ -263,9 +267,9 @@ img { max-width:100%; }
   display:flex; align-items:center; justify-content:center;
   font-size:22px; flex-shrink:0;
 }
-.metric-icon.green { background:linear-gradient(135deg,rgba(39,174,96,.15),rgba(39,174,96,.05)); color:var(--brand-primary); }
-.metric-icon.purple { background:linear-gradient(135deg,rgba(142,68,173,.15),rgba(142,68,173,.05)); color:var(--brand-secondary); }
-.metric-icon.orange { background:linear-gradient(135deg,rgba(243,156,18,.15),rgba(243,156,18,.05)); color:var(--brand-accent); }
+.metric-icon.green { background:linear-gradient(135deg,rgba(30,114,190,.15),rgba(30,114,190,.05)); color:var(--brand-primary); }
+.metric-icon.purple { background:linear-gradient(135deg,rgba(125,194,66,.15),rgba(125,194,66,.05)); color:var(--brand-secondary); }
+.metric-icon.orange { background:linear-gradient(135deg,rgba(251,176,64,.15),rgba(251,176,64,.05)); color:var(--brand-accent); }
 .metric-icon.blue { background:linear-gradient(135deg,rgba(41,128,185,.15),rgba(41,128,185,.05)); color:var(--brand-info); }
 .metric-val { font-size:28px; font-weight:900; color:var(--text-main); font-family:var(--font-mono); line-height:1; }
 .metric-label { font-size:12px; font-weight:600; color:var(--text-muted); margin-top:4px; }
@@ -307,9 +311,9 @@ img { max-width:100%; }
   padding:3px 10px; border-radius:20px;
   font-size:11px; font-weight:700;
 }
-.badge-green { background:rgba(39,174,96,.12); color:var(--brand-primary-dark); }
-.badge-purple { background:rgba(142,68,173,.12); color:var(--brand-secondary); }
-.badge-orange { background:rgba(243,156,18,.12); color:var(--brand-accent-dark); }
+.badge-green { background:rgba(30,114,190,.12); color:var(--brand-primary-dark); }
+.badge-purple { background:rgba(125,194,66,.12); color:var(--brand-secondary-dark); }
+.badge-orange { background:rgba(251,176,64,.12); color:var(--brand-accent-dark); }
 .badge-blue { background:rgba(41,128,185,.12); color:var(--brand-info); }
 .badge-red { background:rgba(231,76,60,.12); color:var(--brand-danger); }
 .badge-gray { background:var(--bg-surface2); color:var(--text-muted); }
@@ -324,7 +328,7 @@ img { max-width:100%; }
   font-family:var(--font-main); font-size:14px;
   transition:var(--transition);
 }
-.form-control:focus { outline:none; border-color:var(--brand-primary); box-shadow:0 0 0 3px rgba(39,174,96,.12); }
+.form-control:focus { outline:none; border-color:var(--brand-primary); box-shadow:0 0 0 3px rgba(30,114,190,.12); }
 .form-control::placeholder { color:var(--text-muted); }
 select.form-control { cursor:pointer; }
 textarea.form-control { resize:vertical; min-height:90px; }
@@ -467,7 +471,7 @@ tbody tr:hover { background:var(--bg-hover); }
 .turma-pill {
   display:inline-block; padding:3px 10px; border-radius:20px;
   font-size:11px; font-weight:700;
-  background:linear-gradient(135deg,rgba(39,174,96,.15),rgba(142,68,173,.1));
+  background:linear-gradient(135deg,rgba(30,114,190,.15),rgba(125,194,66,.1));
   color:var(--brand-primary-dark);
 }
 
@@ -493,30 +497,103 @@ tbody tr:hover { background:var(--bg-hover); }
 .dia-card-content { font-size:13px; font-weight:600; color:var(--text-main); line-height:1.4; }
 
 /* ===== RESPONSIVE ===== */
+
+/* ── Tablet wide (≤1100px) ── */
 @media (max-width:1100px) {
-  .metrics-grid { grid-template-columns:repeat(2,1fr); }
-  .grid-3 { grid-template-columns:1fr 1fr; }
+  .metrics-grid  { grid-template-columns:repeat(2,1fr); }
+  .grid-3        { grid-template-columns:1fr 1fr; }
   .cardapio-grid { grid-template-columns:repeat(3,1fr); }
+  .kanban-col    { flex:0 0 220px; }
 }
+
+/* ── Tablet portrait (≤900px) ── */
+@media (max-width:900px) {
+  .kanban-col { flex:0 0 200px; }
+  .grid-auto  { grid-template-columns:repeat(2,1fr); }
+}
+
+/* ── Mobile landscape / small tablet (≤768px) ── */
 @media (max-width:768px) {
+  /* Sidebar desliza */
   .sidebar { transform:translateX(-100%); }
   .sidebar.open { transform:translateX(0); }
   .main-wrap { margin-left:0; }
+
+  /* Topbar */
   .topbar { padding:0 16px; }
   .hamburger { display:flex; }
-  .page-area { padding:16px 16px 80px; }
+
+  /* Conteúdo com espaço para bottom-nav */
+  .page-area { padding:16px 16px 84px; }
   .bottom-nav { display:flex; }
-  .metrics-grid { grid-template-columns:1fr 1fr; gap:12px; }
-  .grid-2 { grid-template-columns:1fr; }
-  .kanban { flex-direction:column; }
-  .kanban-col { flex:none; }
+
+  /* Grids */
+  .metrics-grid  { grid-template-columns:1fr 1fr; gap:12px; }
+  .grid-2        { grid-template-columns:1fr; }
+  .grid-3        { grid-template-columns:1fr; }
+  .grid-auto     { grid-template-columns:1fr; }
   .cardapio-grid { grid-template-columns:repeat(2,1fr); }
-  .modal { padding:20px; }
+
+  /* Kanban vira coluna */
+  .kanban { flex-direction:column; }
+  .kanban-col { flex:none; width:100%; }
+
+  /* Section header envolve quando estreito */
+  .section-header { flex-wrap:wrap; gap:10px; }
+
+  /* Modal */
+  .modal-overlay { padding:12px; }
+  .modal { padding:22px 16px; }
+
+  /* Toast acima do bottom-nav */
+  .toast-container { bottom:80px; right:12px; left:12px; }
+  .toast { min-width:unset; max-width:100%; }
+
+  /* Tabela mais compacta */
+  td, th { padding:10px 12px; }
 }
+
+/* ── Mobile portrait (≤480px) ── */
 @media (max-width:480px) {
-  .metrics-grid { grid-template-columns:1fr; }
+  /* Tipografia */
   .topbar-title { font-size:15px; }
+  .section-title { font-size:14px; }
+
+  /* Botão "Bot" na topbar: só ícone */
+  .topbar-right .btn-primary { padding:7px 10px; font-size:0; gap:0; }
+  .topbar-right .btn-primary .icon { display:block; width:18px; height:18px; }
+
+  /* Grids */
+  .metrics-grid  { grid-template-columns:1fr; }
   .cardapio-grid { grid-template-columns:1fr; }
+  .grid-auto     { grid-template-columns:1fr; }
+
+  /* Section-header empilha */
+  .section-header { flex-direction:column; align-items:flex-start; }
+  .section-header > button,
+  .section-header > .btn { width:100%; justify-content:center; }
+
+  /* Modal ocupa quase a tela toda no rodapé */
+  .modal-overlay { padding:0; align-items:flex-end; }
+  .modal         { border-radius:var(--radius-lg) var(--radius-lg) 0 0; max-height:88vh; }
+  .modal-lg      { max-width:100%; }
+  .modal-footer  { flex-wrap:wrap; }
+  .modal-footer > .btn { flex:1; justify-content:center; }
+
+  /* Cards e área */
+  .metric-card { padding:14px 12px; }
+  .kanban-card { padding:10px 12px; }
+  .page-area { padding:12px 12px 80px; }
+
+  /* Tabela */
+  td, th { padding:8px 10px; font-size:13px; }
+
+  /* Bottom-nav mais compacto */
+  .bnav-item { padding:5px 6px; font-size:9px; letter-spacing:0; }
+  .bnav-item .icon { width:20px; height:20px; }
+
+  /* Toast */
+  .toast-container { bottom:72px; }
 }
 </style>
 </head>
@@ -554,13 +631,10 @@ tbody tr:hover { background:var(--bg-hover); }
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <div class="sidebar-logo-mark">
-        <div class="sidebar-logo-icon">🏫</div>
-        <div class="sidebar-logo-text">
-          <div class="sidebar-logo-title">EscolaZap</div>
-          <div class="sidebar-logo-sub">Painel Administrativo</div>
-        </div>
+      <div class="sidebar-logo-img-wrap">
+        <img src="https://escolaraiodeluz.com.br/wp-content/uploads/2023/05/logotipo-topo-raiodeluz.png" alt="Colégio Raio de Luz"/>
       </div>
+      <div class="sidebar-logo-caption">Escola Digital</div>
     </div>
 
     <nav class="sidebar-nav">
@@ -1202,7 +1276,7 @@ tbody tr:hover { background:var(--bg-hover); }
     </div>
     <div class="form-group">
       <label class="form-label">Nome do bot no WhatsApp</label>
-      <input type="text" class="form-control" id="bot-name" placeholder="EscolaZap Infantil"/>
+      <input type="text" class="form-control" id="bot-name" placeholder="Raio de Luz Digital"/>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-bot')">Cancelar</button>
@@ -1853,7 +1927,7 @@ const AvisoApp = {
     for (const r of targets) {
       await supaApi('POST', '/avisos', { responsavel_id: r.id, titulo, mensagem: msg, status: 'pendente' });
       if (r.telefone) {
-        await sendWhatsApp(r.telefone, `📢 *${titulo}*\n\n${msg}\n\n_EscolaZap 🏫_`);
+        await sendWhatsApp(r.telefone, `📢 *${titulo}*\n\n${msg}\n\n_Colégio Raio de Luz 🌟_`);
       }
     }
     showToast(`Aviso enviado para ${targets.length} responsável(is)!`);
@@ -1936,7 +2010,7 @@ const ComunicadoApp = {
     let sent = 0;
     for (const r of resps) {
       if (r.telefone) {
-        await sendWhatsApp(r.telefone, `📣 *${titulo}*\n\n${msg}\n\n_EscolaZap 🏫_`);
+        await sendWhatsApp(r.telefone, `📣 *${titulo}*\n\n${msg}\n\n_Colégio Raio de Luz 🌟_`);
       }
       sent++;
       const pct = Math.round((sent/resps.length)*100);
@@ -1962,7 +2036,7 @@ const ComunicadoApp = {
     const resps = await supaApi('GET', query) || [];
     let sent = 0;
     for (const r of resps) {
-      if (r.telefone) { await sendWhatsApp(r.telefone, `📣 *${c.titulo}*\n\n${c.mensagem}\n\n_EscolaZap 🏫_`); sent++; }
+      if (r.telefone) { await sendWhatsApp(r.telefone, `📣 *${c.titulo}*\n\n${c.mensagem}\n\n_Colégio Raio de Luz 🌟_`); sent++; }
     }
     await supaApi('PATCH', `/comunicados_escola?id=eq.${id}`, { status:'enviado', enviado_em: new Date().toISOString(), destinatarios: sent });
     showToast(`Comunicado enviado para ${sent} responsáveis!`);
@@ -2079,7 +2153,7 @@ const ReservaApp = {
     const r = this.data.find(x => x.id === id);
     if (r?.responsaveis?.telefone) {
       await sendWhatsApp(r.responsaveis.telefone,
-        `\u2705 *Reserva Confirmada!*\n\n\ud83d\uddd3\ufe0f Espa\u00e7o: ${r.local}\n\ud83d\udcc5 Data: ${fmtDataBr(r.data)}\n\u23f0 Hor\u00e1rio: ${r.horario}\n\n_EscolaZap \ud83c\udfeb_`);
+        `\u2705 *Reserva Confirmada!*\n\n\ud83d\uddd3\ufe0f Espa\u00e7o: ${r.local}\n\ud83d\udcc5 Data: ${fmtDataBr(r.data)}\n\u23f0 Hor\u00e1rio: ${r.horario}\n\n_Col\u00e9gio Raio de Luz \ud83c\udf1f_`);
     }
     showToast('Reserva confirmada! Responsável notificado via WhatsApp.');
     this.load();
