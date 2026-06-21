@@ -3789,14 +3789,23 @@
         if(!btn) return;
         var id     = btn.getAttribute('data-apv-id');
         var action = btn.getAttribute('data-apv-action');
-        var reserva = pendingItems.find(function(r){ return String(r.id) === String(id); });
+        /* guarda dados da reserva do cache antes do PATCH limpar a lista */
+        var cached = pendingItems.find(function(r){ return String(r.id) === String(id); });
         btn.disabled = true;
         supaApi('PATCH', '/reservas?id=eq.' + id, { status: action })
           .then(function(){
-            if(reserva && reserva.moradores && reserva.moradores.telefone){
-              sendWhatsApp(reserva.moradores.telefone, buildMsg(action, reserva));
+            /* busca a reserva fresca com telefone garantido */
+            return supaApi('GET', '/reservas?id=eq.' + id + '&select=*,moradores(nome,telefone,apartamento,bloco)');
+          })
+          .then(function(rows){
+            var reserva = (rows && rows[0]) || cached;
+            var phone = reserva && reserva.moradores && reserva.moradores.telefone;
+            if(phone){
+              sendWhatsApp(phone, buildMsg(action, reserva));
+              showToast(action === 'confirmada' ? 'Reserva confirmada! Morador notificado.' : 'Reserva recusada. Morador notificado.');
+            } else {
+              showToast(action === 'confirmada' ? 'Reserva confirmada! (telefone do morador não encontrado)' : 'Reserva recusada. (telefone não encontrado)', 'error');
             }
-            showToast(action === 'confirmada' ? 'Reserva confirmada! Morador notificado.' : 'Reserva recusada. Morador notificado.');
             loadFromSupabase();
             ReservaApp.loadFromSupabase();
           })
