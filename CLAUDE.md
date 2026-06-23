@@ -28,7 +28,7 @@ Produto da **Automatiz.ia** que automatiza a portaria de condomínios via WhatsA
 moradores    — id, nome, telefone (PK de negócio), apartamento, bloco
 sessoes      — telefone (PK), etapa, dados (JSONB), updated_at
 encomendas   — id, morador_id (FK→moradores), descricao, data_recebimento, status, retirada_em
-visitantes   — id, nome, morador_id, documento, entrada
+visitantes   — id, nome, morador_id, documento, entrada, saida, motivo
 atendimentos — id, telefone, titulo, mensagem, local_ocorrencia, urgencia, status, created_at
 requisicoes  — id, telefone, morador_id, tipo, local_servico, descricao, urgencia, status, created_at
 reservas     — id, morador_id (FK→moradores), area, data (date), horario, status, created_at
@@ -189,7 +189,7 @@ SPA pura: nenhum framework, nenhum build. Abre direto no browser. Navegação cl
 | **Requisições** | Kanban conectado à tabela `requisicoes` |
 | **Ocorrências** | Kanban 4 colunas: Aberta → Em análise → Em andamento → Resolvida — conectado à tabela `atendimentos` |
 | **Encomendas** | Kanban 3 colunas: Recebida → Notificado → Retirada. Avançar para "Notificado" dispara WhatsApp via webhook n8n |
-| **Visitantes** | Lista com filtros (todos/hoje/sem saída) + form de registro manual |
+| **Visitantes** | Kanban 3 colunas: No Condomínio · Saiu Hoje · Anteriores + form de registro manual |
 | **Moradores** | Busca + lista agrupada por bloco (ordem numérica de apartamento) + form de cadastro + edição inline + exclusão |
 | **Reservas** | Lista filtrada por status (todas/pendentes/confirmadas/canceladas) + form de nova reserva + confirmar/recusar por card |
 
@@ -225,6 +225,19 @@ SPA pura: nenhum framework, nenhum build. Abre direto no browser. Navegação cl
 - Modal "+ Novo": título + mensagem; dois botões: "Salvar rascunho" e "Enviar a todos"
 - "Enviar a todos": cria registro no banco, busca todos os moradores com telefone, envia WhatsApp a cada um via webhook n8n, atualiza `status='enviado'`, `enviado_em` e `destinatarios`
 - Envio é sequencial com barra de progresso (ex: "Enviando... 47/128")
+
+**Visitantes (`VisitorApp`):**
+- Kanban 3 colunas: **No Condomínio** (entrada hoje, sem saída) · **Saiu Hoje** (entrada hoje, saída registrada) · **Anteriores** (dias anteriores)
+- Botão "✓ Registrar saída" aparece apenas na coluna "No Condomínio"; atualiza `saida=now()` via PATCH e move o card para "Saiu Hoje"
+- Botão 🗑 exclui o registro em qualquer coluna
+- Form de registro manual na portaria: nome, documento, morador visitado, motivo
+
+**Painel de Notificações (`NotifApp`):**
+- Ícone 🔔 na topbar; ponto vermelho aparece quando há qualquer pendência
+- Clique abre dropdown com 4 seções: Reservas pendentes · Ocorrências abertas · Visitantes dentro agora · Encomendas aguardando
+- Cada item é clicável e navega direto para a aba correspondente
+- Ponto vermelho é calculado silenciosamente ao iniciar (4 queries paralelas `limit=1`)
+- Fecha ao clicar fora ou no ✕
 
 **Configurações do Bot (modal):**
 - Ícone ⚙️ na topbar abre modal de configurações
@@ -299,7 +312,7 @@ Todas as páginas recarregam dados do Supabase ao serem navegadas. Auto-refresh 
 | `OccApp` | `atendimentos` | PATCH status via `advance()` |
 | `ReqApp` | `requisicoes` | PATCH status via `advance()` |
 | `PackageApp` | `encomendas` | PATCH status + DELETE + POST via `createWithMorador()` |
-| `VisitorApp` | `visitantes` | POST + lista |
+| `VisitorApp` | `visitantes` | POST + PATCH saída + DELETE + Kanban |
 | `MoradorApp` | `moradores` | POST + PATCH (edição) + DELETE + busca |
 | `ReservaApp` | `reservas` | POST + PATCH status (confirmar/cancelar) |
 | `ComunicadoApp` | `comunicados` | POST (rascunho ou envio) + PATCH status após envio em massa via WhatsApp |
@@ -354,8 +367,10 @@ Todas as páginas recarregam dados do Supabase ao serem navegadas. Auto-refresh 
   ALTER TABLE comunicados ENABLE ROW LEVEL SECURITY;
   CREATE POLICY "anon all" ON comunicados USING (true) WITH CHECK (true);
   ```
-- **Reservas de áreas comuns** ✅ — bot com fluxo multi-step (`reserva_area` → `reserva_data` → `reserva_horario`); menu posição 4 ("Fazer Reserva"); dashboard com calendário mensal, validação de conflito em tempo real, kanban de aprovação e widget no painel; tabela `reservas` criada no Supabase. A fila de aprovações do painel principal ainda está mockada.
+- **Reservas de áreas comuns** ✅ — bot com fluxo multi-step (`reserva_area` → `reserva_data` → `reserva_horario`); menu posição 4 ("Fazer Reserva"); dashboard com calendário mensal, validação de conflito em tempo real, kanban de aprovação e widget no painel; tabela `reservas` criada no Supabase.
 - **Comunicados** ✅ — modal para criar/enviar comunicados, `ComunicadoApp` conectado à tabela `comunicados`, envio em massa via webhook n8n WhatsApp; tabela `comunicados` criada no Supabase.
-- **Painel de aprovações** — botões de aprovar/rejeitar existem no HTML mas sem JS conectado.
+- **Painel de aprovações** ✅ — `ApprovalApp` conectado ao Supabase (`reservas?status=eq.pendente`); botões Confirmar/Recusar fazem PATCH + enviam WhatsApp ao morador via webhook n8n.
+- **Kanban de Visitantes** ✅ — substituiu lista+filtros; 3 colunas por estado/data.
+- **Painel de Notificações** ✅ — `NotifApp` na topbar; ponto vermelho dinâmico; dropdown com 4 seções clicáveis.
 - **Nós legados** — `Resp Visitantes` e `Resp Ocorrencias` (usando API key `720C1736...`) são stubs antigos que foram substituídos pelos fluxos multi-step. Podem ser removidos do workflow.
 - **Segurança** — mover as chaves de API (Supabase anon key e Evolution API key) para variáveis de ambiente do n8n antes de usar em produção com múltiplos clientes.
